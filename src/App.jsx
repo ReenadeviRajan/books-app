@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import "./App.css";
 import NavBar from "./components/NavBar";
@@ -6,9 +6,11 @@ import MainContent from "./components/MainContent";
 import NumResults from "./components/NumResults";
 import ListBox from "./components/ListBox";
 import Bookslist from "./components/Bookslist";
-import StudiedList from "./components/StudiedList";
 import BooksReadList from "./components/BooksReadList";
 import BooksReadSummary from "./components/BooksReadSummary";
+import FormatBooksResponse from "./services/FormatBooksResponse";
+import Loader from "./components/Loader";
+import ErrorMessage from "./components/ErrorMessage";
 
 const Books = [
   {
@@ -83,10 +85,33 @@ const BooksRead = [
       "http://books.google.com/books/content?id=e_l9zQEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api",
   },
 ];
-
+const KEY = `AIzaSyDd8zjqw7paHROuV-wUP-ZNvUXmGornx0c`;
 function App() {
-  const [books, setBooks] = useState(Books);
+  const [books, setBooks] = useState([]);
   const [booksRead, setReadBooks] = useState(Books);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function fetchPosts(params) {
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=monk+ferarri&key=${KEY}`
+      );
+      const data = await response.json();
+
+      if (!data.items) throw new Error("No books data available");
+      setBooks(FormatBooksResponse(data));
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      console.log(error.message);
+      setError(error.message);
+    }
+  }
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
   return (
     <>
@@ -95,7 +120,9 @@ function App() {
       </NavBar>
       <MainContent>
         <ListBox>
-          <Bookslist booksData={books} />
+          {isLoading && <Loader />}
+          {!isLoading && !error && <Bookslist booksData={books} />}
+          {error && <ErrorMessage message={error} />}
         </ListBox>
         <ListBox>
           <BooksReadSummary />
