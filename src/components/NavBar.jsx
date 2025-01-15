@@ -6,7 +6,7 @@ export default function NavBar({ children }) {
     <div>
       <nav className="navbar">
         <Logo />
-        <Search />
+
         {children}
       </nav>
     </div>

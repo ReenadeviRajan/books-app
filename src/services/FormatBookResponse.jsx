@@ -1,15 +1,5 @@
-export default function FormatBookResponse(booksData) {
-  let books = [];
-  for (let item of booksData.items) {
-    if (item.volumeInfo.industryIdentifiers) {
-      let book = prepareBookObject(item);
-      books.push(book);
-    }
-  }
-  return books;
-}
-
-function prepareBookObject(item) {
+/*There was a delay when it was a normal function, so created separate file*/
+export default function prepareBookObject(item) {
   let book = {
     id: item.id,
     title: item.volumeInfo.title,
@@ -20,4 +10,8 @@ function prepareBookObject(item) {
     year: item.volumeInfo.publishedDate,
   };
   return book;
+}
+
+export function average(arr) {
+  return arr.reduce((acc, curr) => acc + curr, 0) / arr.length;
 }

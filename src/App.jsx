@@ -11,6 +11,11 @@ import BooksReadSummary from "./components/BooksReadSummary";
 import FormatBooksResponse from "./services/FormatBooksResponse";
 import Loader from "./components/Loader";
 import ErrorMessage from "./components/ErrorMessage";
+import Search from "./components/Search";
+import BookDetails from "./components/BookDetails";
+import { useBooks } from "./services/useBooks";
+import { useLocalStorage } from "./services/useLocalStorage";
+import { useKeyDownEvent } from "./services/useKeyDownEvent";
 
 const Books = [
   {
@@ -87,46 +92,66 @@ const BooksRead = [
 ];
 const KEY = `AIzaSyDd8zjqw7paHROuV-wUP-ZNvUXmGornx0c`;
 function App() {
-  const [books, setBooks] = useState([]);
-  const [booksRead, setReadBooks] = useState(Books);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState("");
 
-  async function fetchPosts(params) {
-    try {
-      setIsLoading(true);
-      const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=monk+ferarri&key=${KEY}`
-      );
-      const data = await response.json();
+  const { isLoading, error, books } = useBooks(query, handleBack);
 
-      if (!data.items) throw new Error("No books data available");
-      setBooks(FormatBooksResponse(data));
-      setIsLoading(false);
-    } catch (error) {
-      setIsLoading(false);
-      console.log(error.message);
-      setError(error.message);
-    }
+  const [booksRead, setReadBooks] = useLocalStorage([], "readlist");
+
+  useKeyDownEvent("Escape", handleBack);
+
+  function handleSelectedId(id) {
+    setSelectedId((selectedId) =>
+      id === selectedId ? "" : id
+    ); /*to close the page when we select same book */
   }
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+
+  function handleBack() {
+    setSelectedId("");
+  }
+
+  function handleBookRead(book) {
+    setReadBooks((b) => [...b, book]);
+  }
+
+  function deleteReadBook(bookId) {
+    let booksData = booksRead.filter((book) => book.id != bookId);
+    setReadBooks(booksData);
+  }
 
   return (
     <>
       <NavBar>
+        <Search query={query} setQuery={setQuery} />
         <NumResults booksData={books} />
       </NavBar>
       <MainContent>
         <ListBox>
           {isLoading && <Loader />}
-          {!isLoading && !error && <Bookslist booksData={books} />}
+          {!isLoading && !error && (
+            <Bookslist booksData={books} handleSelectedId={handleSelectedId} />
+          )}
           {error && <ErrorMessage message={error} />}
         </ListBox>
         <ListBox>
-          <BooksReadSummary />
-          <BooksReadList booksRead={booksRead} />
+          {selectedId ? (
+            <BookDetails
+              selectedId={selectedId}
+              handleBack={handleBack}
+              onBookRead={handleBookRead}
+              booksRead={booksRead}
+            />
+          ) : (
+            <>
+              <BooksReadSummary booksRead={booksRead} />
+              <BooksReadList
+                booksRead={booksRead}
+                deleteReadBook={deleteReadBook}
+              />
+            </>
+          )}
+          {/*if book selected Bookdetails must be shown, other wise book details */}
         </ListBox>
       </MainContent>
     </>
